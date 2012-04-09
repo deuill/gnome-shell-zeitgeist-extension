@@ -2,7 +2,7 @@
  "uuid": "jump-lists@gnome-shell-extensions.zeitgeist-project.com",
  "name": "Jump Lists",
  "description": "Zeitgeist based jumplists for applications. The file-friendly approach puts access to your latest, most recent of favourite documents within direct reach of the application itself: just right-click on a launcher to view files and launch them in the application. Zeitgeist is required for the extension to work. If the menu of an application doesn't populate try to look for a Zeitgeist plugin for your application",
- "shell-version": [ "3.2", "3.4" ],
+ "shell-version": [ "3.4" ],
  "localedir": "/usr/local/share/locale",
  "url": "http://git.gnome.org/gnome-shell-extensions"
 }
