@@ -2,7 +2,7 @@
  "uuid": "zeitgeist-search@gnome-shell-extensions.gnome.org",
  "name": "Advanced Search",
  "description": "Improve and extend GNOME Shell searching",
- "shell-version": [ "3.2" ],
+ "shell-version": [ "3.2", "3.4" ],
  "localedir": "/usr/local/share/locale",
  "url": "http://git.gnome.org/gnome-shell-extensions"
 }

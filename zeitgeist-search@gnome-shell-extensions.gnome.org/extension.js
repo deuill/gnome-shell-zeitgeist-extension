@@ -36,16 +36,19 @@ const C_ = Gettext.pgettext;
 const ContactDisplay = imports.ui.contactDisplay;
 const PlaceDisplay = imports.ui.placeDisplay;
 const AppDisplay = imports.ui.appDisplay;
-const DocDisplay = imports.ui.docDisplay;
 
-const Extension = imports.ui.extensionSystem.extensions["zeitgeist-search@gnome-shell-extensions.gnome.org"];
+// Dearly departed...
+// https://bugzilla.gnome.org/show_bug.cgi?id=670150
+//const DocDisplay = imports.ui.docDisplay;
+
+const Me = imports.misc.extensionUtils.getCurrentExtension();
 
 const Main = imports.ui.main;
 const Util = imports.misc.util;
-const DocInfo = Extension.docInfo;
-const Semantic = Extension.semantic;
-const Zeitgeist = Extension.zeitgeist;
-const ZeitgeistSearch = Extension.zeitgeistSearch;
+const DocInfo = Me.imports.docInfo;
+const Semantic = Me.imports.semantic;
+const Zeitgeist = Me.imports.zeitgeist;
+const ZeitgeistSearch = Me.imports.zeitgeistSearch;
 
 function init(metadata)
 {
@@ -81,8 +84,8 @@ function disable() {
     }
     Main.overview._viewSelector.addSearchProvider(new AppDisplay.AppSearchProvider());
     Main.overview._viewSelector.addSearchProvider(new AppDisplay.SettingsSearchProvider());
+    //Main.overview._viewSelector.addSearchProvider(new DocDisplay.DocSearchProvider());
     Main.overview._viewSelector.addSearchProvider(new PlaceDisplay.PlaceSearchProvider());
-    Main.overview._viewSelector.addSearchProvider(new DocDisplay.DocSearchProvider());
     Main.overview._viewSelector.addSearchProvider(new ContactDisplay.ContactSearchProvider());
 }
 

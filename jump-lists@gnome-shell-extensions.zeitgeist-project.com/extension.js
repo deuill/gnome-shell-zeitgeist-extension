@@ -9,6 +9,7 @@
  */
 
 const Clutter = imports.gi.Clutter;
+const Config = imports.misc.config;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const Shell = imports.gi.Shell;
@@ -17,16 +18,16 @@ const Signals = imports.signals;
 const St = imports.gi.St;
 const Mainloop = imports.mainloop;
 
-const Extension = imports.ui.extensionSystem.extensions["jump-lists@gnome-shell-extensions.zeitgeist-project.com"];
+const Me = imports.misc.extensionUtils.getCurrentExtension();
 
 const PopupMenu = imports.ui.popupMenu;
 const AppDisplay = imports.ui.appDisplay;
 const Main = imports.ui.main;
 const Util = imports.misc.util;
 
-const DocInfo = Extension.docInfo;
-const Semantic = Extension.semantic;
-const Zeitgeist = Extension.zeitgeist;
+const DocInfo = Me.imports.docInfo;
+const Semantic = Me.imports.semantic;
+const Zeitgeist = Me.imports.zeitgeist;
 
 function setJumplist (appIconMenu) {
     var eventTemplate = new Zeitgeist.Event('', '', "application://" + appIconMenu._source.app.get_id(), [], []);
@@ -94,7 +95,7 @@ function setJumplist (appIconMenu) {
 }
 
 function init(metadata) {
-    imports.gettext.bindtextdomain('gnome-shell-extensions', metadata.localedir);
+    imports.gettext.bindtextdomain('gnome-shell-extensions', Config.LOCALEDIR);
 }
 
 let origRedisplay = null;

@@ -1,7 +1,7 @@
 {
   "description": "Add 2 most recently used apps that are not favorited from within the last 30 minutes. This extension requires Zeitgeist to work", 
   "name": "Smart Launcher",
-  "shell-version": [ "3.2" ],
+  "shell-version": [ "3.2", "3.4" ],
   "localedir": "/usr/local/share/locale",
   "url": "http://git.gnome.org/gnome-shell-extensions",
   "uuid": "smart-launcher@gnome-shell-extensions.zeitgeist-project.com"

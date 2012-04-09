@@ -1,9 +1,9 @@
 const Main = imports.ui.main;
 const Lang = imports.lang;
 const AppFavorites = imports.ui.appFavorites;
-const Extension = imports.ui.extensionSystem.extensions["smart-launcher@gnome-shell-extensions.zeitgeist-project.com"];
-const Semantic = Extension.semantic;
-const Zeitgeist = Extension.zeitgeist;
+const Me = imports.misc.extensionUtils.getCurrentExtension();
+const Semantic = Me.imports.semantic;
+const Zeitgeist = Me.imports.zeitgeist;
 
 let singalId = null;
 let appSystem = null;
@@ -15,6 +15,8 @@ let signalId1 = null;
 let signalId2 = null;
 let signalId3 = null;
 let signalId4 = null;
+
+// FIXME: Anything added flashes up and disappears - this (below) seems OK, but I'm guessing something more substantial has changed in Dash to auto restore to the originals
 
 function populateDash (events) {
     var actors = [];
@@ -39,6 +41,7 @@ function populateDash (events) {
             }
             for (var j = 0; j < events[i].subjects.length; j++) {
                 var subject = events[i].subjects[j].uri;
+		global.log(subject);
                 if (subject.indexOf("application://") > -1) {
                     actor = subject.replace("application://", "").trim();
                     if (favs.indexOf(actor) == -1 && actors.indexOf(actor) == -1 &&
@@ -50,7 +53,7 @@ function populateDash (events) {
         }
     }
     for (var i = 0; i < recentApps.length; i++) {
-        Main.overview._dash._box.remove_actor(recentApps[i]);
+        Main.overview._dash._box.remove_child(recentApps[i]);
         recentApps[i].destroy();
     }
     recentApps = [];
@@ -60,7 +63,7 @@ function populateDash (events) {
         var app = appSystem.lookup_app(actors[i]);
         var item = { app: app,
                     item: Main.overview._dash._createAppItem(app), pos: -1 };
-        Main.overview._dash._box.insert_actor(item.item.actor, -1);
+        Main.overview._dash._box.insert_child_at_index(item.item.actor, -1);
         recentApps.push(item.item.actor);
         if (i  == 1) break;
     }
@@ -106,7 +109,7 @@ function disable() {
     appFav.disconnect(signalId3);
     appSystem.disconnect(signalId4);
     for (var i = 0; i < recentApps.length; i++) {
-        Main.overview._dash._box.remove_actor(recentApps[i]);
+        Main.overview._dash._box.remove_child(recentApps[i]);
         recentApps[i].destroy();
     }
     Main.overview._dash._adjustIconSize();

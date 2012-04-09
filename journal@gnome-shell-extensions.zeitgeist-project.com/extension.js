@@ -22,6 +22,8 @@
  */
 
 const Clutter = imports.gi.Clutter;
+const Config = imports.misc.config;
+const GnomeDesktop = imports.gi.GnomeDesktop;
 const GLib = imports.gi.GLib;
 const Pango = imports.gi.Pango;
 const Gio = imports.gi.Gio;
@@ -36,15 +38,15 @@ const _ = Gettext.gettext;
 const C_ = Gettext.pgettext;
 const Tp = imports.gi.TelepathyGLib;
 
-const Extension = imports.ui.extensionSystem.extensions["journal@gnome-shell-extensions.zeitgeist-project.com"];
+const Me = imports.misc.extensionUtils.getCurrentExtension();
 
 const IconGrid = imports.ui.iconGrid;
 const PopupMenu = imports.ui.popupMenu;
 const Main = imports.ui.main;
 const Util = imports.misc.util;
-const DocInfo = Extension.docInfo;
-const Semantic = Extension.semantic;
-const Zeitgeist = Extension.zeitgeist;
+const DocInfo = Me.imports.docInfo;
+const Semantic = Me.imports.semantic;
+const Zeitgeist = Me.imports.zeitgeist;
 const ViewSelector = imports.ui.viewSelector;
 
 
@@ -122,7 +124,7 @@ EventItem.prototype = {
                                               })
                                             });
 
-        this.actor = new St.Group ({ reactive: true});
+        this.actor = new St.Widget({ reactive: true});
         this.actor.connect('enter-event', Lang.bind(this, this._onEnter));
         this.actor.connect('leave-event', Lang.bind(this, this._onLeave)); 
 
@@ -133,7 +135,7 @@ EventItem.prototype = {
                                         x_fill: true,
                                         y_fill: true });
         this._button.set_child (this._icon.actor);
-        this._button.connect ('clicked', Lang.bind(this, this._onButtonPress));
+        this._button.connect ('clicked', Lang.bind(this, this._onClicked));
 
         this._closeButton = new St.Button ({ style_class: "window-close" });
         this._closeButton.connect ('clicked', Lang.bind(this, this._removeItem));
@@ -168,10 +170,10 @@ EventItem.prototype = {
     },
 
     // callback for this._button's "clicked" signal
-    _onButtonPress: function (actor, button) {
+    _onClicked: function (actor, button) {
         this._removeMenuTimeout();
         if (button == 1) {
-            let modifiers = Shell.get_event_state(Clutter.get_current_event ());
+            let modifiers = Clutter.get_current_event().get_state();
             if (modifiers & Clutter.ModifierType.CONTROL_MASK) {
                 this.multiSelect.select (this._button, this._item_info);
             } else {
@@ -977,9 +979,9 @@ JournalLayout.prototype = {
         this._items = [];
         for (var key in this._containers)
         {
-            this._containers[key].actor.destroy_children();
+            this._containers[key].actor.destroy_all_children();
             this._containers[key].actor.destroy();
-            this.actor.destroy_children();
+            this.actor.destroy_all_children();
         }
     },
 };
@@ -1114,10 +1116,10 @@ JournalDisplay.prototype = {
                 this._sections[i].remove_style_pseudo_class('selected');
         }
         
-        var b = false
+        var b = false;
         if (num > 3) 
-            b= true
-        this._layout._setUpTimeViews(b, this._categories[num])
+            b= true;
+        this._layout._setUpTimeViews(b, this._categories[num]);
     },
     
     _setFilters: function ()
@@ -1416,7 +1418,7 @@ let tabIndex;
 
 function init(metadata)
 {
-    imports.gettext.bindtextdomain('gnome-shell-extensions', metadata.localedir);
+    imports.gettext.bindtextdomain('gnome-shell-extensions', Config.LOCALEDIR);
 }
 
 function enable() {

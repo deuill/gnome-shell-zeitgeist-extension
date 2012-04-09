@@ -212,7 +212,7 @@ const _log = new Log(DBus.session, LOG_NAME, LOG_PATH);
 function findEvents(timeRange, eventTemplates, storageState, numEvents, resultType, callback) {
     function handler(results, error) {
         if (error != null)
-            log("Error querying Zeitgeist for events: "+error);
+            global.log("Error querying Zeitgeist for events: "+error);
         else
             callback(results.map(Event.fromPlain));
     }
@@ -223,7 +223,7 @@ function findEvents(timeRange, eventTemplates, storageState, numEvents, resultTy
 function findEventIds(timeRange, eventTemplates, storageState, numEvents, resultType, callback) {
     function handler(results, error) {
         if (error != null)
-            log("Error querying Zeitgeist for event IDs: "+error);
+            global.log("Error querying Zeitgeist for event IDs: "+error);
         else
             callback(results);
     }
@@ -267,8 +267,9 @@ const _index = new Index(DBus.session, INDEX_NAME, INDEX_PATH);
 function fullTextSearch(query, eventTemplates, sorting, callback) {
     function handler(results, error) {
         if (error != null)
-            log("Error searching with Zeitgeist FTS: "+error);
+            global.log("Error searching with Zeitgeist FTS: "+error);
         else
+	    global.log(query);
             callback(results[0].map(Event.fromPlain));
     }
     _index.SearchRemote(query, [0, MAX_TIMESTAMP],
