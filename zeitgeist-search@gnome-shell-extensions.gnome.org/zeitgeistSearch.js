@@ -51,7 +51,7 @@ ZeitgeistAsyncSearchProvider.prototype = {
 
     _init: function(title, interpretations) {
         Search.SearchProvider.prototype._init.call(this, title);
-	this.async = true;
+        this.async = true;
         this._buildTemplates(interpretations);
     },
 
@@ -84,19 +84,19 @@ ZeitgeistAsyncSearchProvider.prototype = {
 
     //FIXME: From reading the previous impl I think this should be as follows, but I haven't entirely understood the Async system and whether this _must_ get the callback to wait for the results to come through (or whether this is called after pushResults, which would make more sense)
     getResultMetasAsync: function(resultIds, callback) {
-	let items = [];
+        let items = [];
         for (let i = 0; i < resultIds.length; i++) {
-		resultId = resultIds[i];
-		items.push(
-		 	{ 'id': ZeitgeistSubjectCache[resultId].uri,
-                 	'name': ZeitgeistSubjectCache[resultId].name,
-                 	'createIcon': function (size) {
+                resultId = resultIds[i];
+                items.push(
+                         { 'id': ZeitgeistSubjectCache[resultId].uri,
+                         'name': ZeitgeistSubjectCache[resultId].name,
+                         'createIcon': function (size) {
                                    return ZeitgeistSubjectCache[resultId].createIcon(size);
                                },
-               		}
-		);
-	}
-	callback(items);
+                               }
+                );
+        }
+        callback(items);
     },
 
     activateResult: function(resultId) {
@@ -221,7 +221,7 @@ AppAsyncSearchProvider.prototype = {
 
     _init: function() {
         Search.SearchProvider.prototype._init.call(this, _("APPLICATIONS"));
-	this.async = true;
+        this.async = true;
         this._appSys = Shell.AppSystem.get_default();
         let subject = new Zeitgeist.Subject('application://*', '', '', '', '', '', '');
         this.templates = [new Zeitgeist.Event('http://www.zeitgeist-project.com/ontologies/2010/01/27/zg#AccessEvent',
@@ -247,19 +247,19 @@ AppAsyncSearchProvider.prototype = {
     },
 
     getResultMetasAsync: function(apps, callback) {
-    	let items = [];
-	for ( let i = 0 ; i < apps.length ; i++ ) {
-		app = apps[i];
-        	if (app != undefined) {
-        	    items.push({ 'id': app,
-        	         'name': app.get_name(),
-        	         'createIcon': function(size) {
-        	                           return app.create_icon_texture(size);
-        	                       }
-        	       });
-        	}
-	}
-	callback(items);
+        let items = [];
+        for ( let i = 0 ; i < apps.length ; i++ ) {
+                app = apps[i];
+                if (app != undefined) {
+                    items.push({ 'id': app,
+                         'name': app.get_name(),
+                         'createIcon': function(size) {
+                                           return app.create_icon_texture(size);
+                                       }
+                       });
+                }
+        }
+        callback(items);
     },
 
     activateResult: function(app, params) {
@@ -324,7 +324,7 @@ SettingsAsyncSearchProvider.prototype = {
 
     _init: function() {
         Search.SearchProvider.prototype._init.call(this, _("SETTINGS"));
-	this.async = true;
+        this.async = true;
         this._appSys = Shell.AppSystem.get_default();
         this._gnomecc = this._appSys.lookup_app('gnome-control-center.desktop');
         let subject = new Zeitgeist.Subject('application://*', '', '', '', '', '', '');
@@ -351,19 +351,19 @@ SettingsAsyncSearchProvider.prototype = {
     },
 
     getResultMetasAsync: function(apps, callback) {
-    	let items = [];
-	for ( let i = 0 ; i < apps.length ; i++ ) {
-		app = apps[i];
-        	if (app != undefined) {
-        	    items.push({ 'id': app,
-        	         'name': app.get_name(),
-        	         'createIcon': function(size) {
-        	                           return app.create_icon_texture(size);
-        	                       }
-        	       });
-        	}
-	}
-	callback(items);
+        let items = [];
+        for ( let i = 0 ; i < apps.length ; i++ ) {
+                app = apps[i];
+                if (app != undefined) {
+                    items.push({ 'id': app,
+                         'name': app.get_name(),
+                         'createIcon': function(size) {
+                                           return app.create_icon_texture(size);
+                                       }
+                       });
+                }
+        }
+        callback(items);
     },
 
     activateResult: function(app, params) {

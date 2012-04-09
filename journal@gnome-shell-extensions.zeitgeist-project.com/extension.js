@@ -1,6 +1,6 @@
 
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
-	
+        
 /* JournalDisplay object to show a timeline of the user's past activities
  *
  * This file exports a JournalDisplay object, which carries a JournalDisplay.actor.
@@ -989,64 +989,64 @@ JournalLayout.prototype = {
 
 // FIXME: DRY the code.
 function MultiSelect () {
-	this._init ();
+        this._init ();
 }
 
 MultiSelect.prototype = {
-	_init: function () {
-		this._elements = [];
-		this._multi_select = false;
-	},
+        _init: function () {
+                this._elements = [];
+                this._multi_select = false;
+        },
 
-	select: function (source, item) {
-		if (this._elements.length == 0)
-			this._multi_select = true;
-		else
-			this._multi_select = false;
+        select: function (source, item) {
+                if (this._elements.length == 0)
+                        this._multi_select = true;
+                else
+                        this._multi_select = false;
 
-		if (this.isSelected (item) || this._multi_select) {
-			let e = { source : source,
-					  item: item,
-					  selected: true };
-			source.add_style_class_name('journal-item-selection');
-			this._elements.push(e);
-		} else {
-			this.unselect (source, item);
-		}
-	},
+                if (this.isSelected (item) || this._multi_select) {
+                        let e = { source : source,
+                                          item: item,
+                                          selected: true };
+                        source.add_style_class_name('journal-item-selection');
+                        this._elements.push(e);
+                } else {
+                        this.unselect (source, item);
+                }
+        },
 
-	unselect: function (source, item) {
-		source.remove_style_class_name('journal-item-selection');	
-		for (let i = 0; i < this._elements.length; i++) {
-			if (this._elements[i].source == source) {
-				this._elements.splice(i, 1);
-				break;
-			}
-		}
-	},
+        unselect: function (source, item) {
+                source.remove_style_class_name('journal-item-selection');        
+                for (let i = 0; i < this._elements.length; i++) {
+                        if (this._elements[i].source == source) {
+                                this._elements.splice(i, 1);
+                                break;
+                        }
+                }
+        },
 
-	isSelected: function (item) {
-		for (let i = 0; i < this._elements.length; i++) {
-			let e = this._elements[i];
-			if ((e.item == item) && e.selected) {
-				return false;
-			}
-		}
-		return true;
-	},
+        isSelected: function (item) {
+                for (let i = 0; i < this._elements.length; i++) {
+                        let e = this._elements[i];
+                        if ((e.item == item) && e.selected) {
+                                return false;
+                        }
+                }
+                return true;
+        },
 
-	destroy: function() {
-	  let elements = this._elements;
-	  for (let i = 0; i < elements.length; i++) {
-		  let e = elements[i];
-		  e.source.remove_style_class_name('journal-item-selection');	
-	  }
-	  this._elements = [];
-	},
+        destroy: function() {
+          let elements = this._elements;
+          for (let i = 0; i < elements.length; i++) {
+                  let e = elements[i];
+                  e.source.remove_style_class_name('journal-item-selection');        
+          }
+          this._elements = [];
+        },
 
-	querySelections: function () {
-		return this._elements;
-	}
+        querySelections: function () {
+                return this._elements;
+        }
 }
 
 

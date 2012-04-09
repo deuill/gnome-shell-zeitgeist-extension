@@ -15,9 +15,9 @@ let signalId1 = null;
 let signalId2 = null;
 let signalId3 = null;
 let signalId4 = null;
+let signalId5 = null;
 
-// FIXME: Anything added flashes up and disappears - this (below) seems OK, but I'm guessing something more substantial has changed in Dash to auto restore to the originals
-
+/* redisplayDash - add in necessary apps and redisplay dash */
 function populateDash (events) {
     var actors = [];
     favs = [];
@@ -41,7 +41,6 @@ function populateDash (events) {
             }
             for (var j = 0; j < events[i].subjects.length; j++) {
                 var subject = events[i].subjects[j].uri;
-		global.log(subject);
                 if (subject.indexOf("application://") > -1) {
                     actor = subject.replace("application://", "").trim();
                     if (favs.indexOf(actor) == -1 && actors.indexOf(actor) == -1 &&
@@ -69,6 +68,24 @@ function populateDash (events) {
     }
     Main.overview._dash._adjustIconSize();
     Main.overview._dash._box.show_all();
+    isDirty = false;
+}
+
+/* redisplayDash - default if nothing's changed; do Dash's _redisplay and put our own apps back in */
+function redisplayDash()
+{
+    for (var i = 0; i < recentApps.length; i++) {
+        Main.overview._dash._box.remove_child(recentApps[i]);
+    }
+    Main.overview._dash._redisplay();
+    for (var i = 0; i < recentApps.length; i++) {
+        var actor = recentApps[i];
+        Main.overview._dash._box.insert_child_at_index(actor, -1);
+        recentApps.push(actor);
+        if (i  == 1) break;
+    }
+    Main.overview._dash._adjustIconSize();
+    Main.overview._dash._box.show_all();
 }
 
 function prepareQuery () {
@@ -76,6 +93,8 @@ function prepareQuery () {
     var now = today.getTime()
     var offset = -today.getTimezoneOffset()*60*1000
     now = now - offset;
+
+    // If isDirty, get result from Zeitgeist, otherwise simply redisplay
     if (isDirty == true) {
         Zeitgeist.findEvents([now - 60*60*1000, Zeitgeist.MAX_TIMESTAMP],
                              [],
@@ -83,6 +102,8 @@ function prepareQuery () {
                              20,
                              Zeitgeist.ResultType.MOST_RECENT_ACTOR,
                              populateDash);
+    } else {
+        redisplayDash();
     }
 }
 
@@ -91,16 +112,22 @@ function enable () {
     appFav = AppFavorites.getAppFavorites();
     favs = appFav._getIds();
     appSystem = Main.overview._dash._appSystem;
-    signalId1 = Main.overview.connect('showing', function () {
-        prepareQuery(); prepareQuery(); isDirty = false; });
+
+    isDirty = true;
+    /* Connect signals where we should set isDirty to true */
     signalId2 = appSystem.connect_after('installed-changed', Lang.bind(this,
-        function () {isDirty = true; prepareQuery(); isDirty = false;}));
+        function () {isDirty = true; prepareQuery();}));
     signalId3 = appFav.connect('changed', Lang.bind(this,
         function () {
             favs = appFav._getIds();
-            isDirty = true; prepareQuery(); isDirty = false;}));
-    signalId4 = appSystem.connect('app-state-changed', Lang.bind(this,
-        function () {isDirty = true; prepareQuery(); }));
+            isDirty = true; prepareQuery();}));
+    signalId4 = appSystem.connect_after('app-state-changed', Lang.bind(this,
+        function () {isDirty = true; prepareQuery();}));
+
+    /* Take over Dash's workId - is this morally sound? It seems tidier in that we formally enter the queueRedisplay
+     * chain, and whatever way we go about it, we must decide how the _dash._redisplay happens anyway */
+    this._dash_workId = Main.overview._dash._workId;
+    Main.overview._dash._workId = Main.initializeDeferredWork(Main.overview._dash._box, Lang.bind(this, prepareQuery));
 }
 
 function disable() {
@@ -108,13 +135,17 @@ function disable() {
     appSystem.disconnect(signalId2);
     appFav.disconnect(signalId3);
     appSystem.disconnect(signalId4);
+    Main.overview._dash.disconnect(signalId5);
+
+    // Give Dash its workId back
+    Main.overview._dash._workId = this._dash_workId;
+
     for (var i = 0; i < recentApps.length; i++) {
         Main.overview._dash._box.remove_child(recentApps[i]);
         recentApps[i].destroy();
     }
     Main.overview._dash._adjustIconSize();
     Main.overview._dash._box.show_all();
-    signalId1 = null;
     signalId2 = null;
     signalId3 = null;
     signalId4 = null;

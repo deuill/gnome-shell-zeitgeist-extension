@@ -1,6 +1,6 @@
 
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
-	
+        
 /* JournalDisplay object to show a timeline of the user's past activities
  *
  * This file exports a JournalDisplay object, which carries a JournalDisplay.actor.

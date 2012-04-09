@@ -269,7 +269,7 @@ function fullTextSearch(query, eventTemplates, sorting, callback) {
         if (error != null)
             global.log("Error searching with Zeitgeist FTS: "+error);
         else
-	    global.log(query);
+            global.log(query);
             callback(results[0].map(Event.fromPlain));
     }
     _index.SearchRemote(query, [0, MAX_TIMESTAMP],
