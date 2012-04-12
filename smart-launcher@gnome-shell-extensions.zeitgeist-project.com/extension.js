@@ -11,11 +11,9 @@ let recentApps = null;
 let appFav = null;
 let favs = null;
 let isDirty = true;
-let signalId1 = null;
 let signalId2 = null;
 let signalId3 = null;
 let signalId4 = null;
-let signalId5 = null;
 
 /* redisplayDash - add in necessary apps and redisplay dash */
 function populateDash (events) {
@@ -131,11 +129,9 @@ function enable () {
 }
 
 function disable() {
-    Main.overview.disconnect(signalId1);
     appSystem.disconnect(signalId2);
     appFav.disconnect(signalId3);
     appSystem.disconnect(signalId4);
-    Main.overview._dash.disconnect(signalId5);
 
     // Give Dash its workId back
     Main.overview._dash._workId = this._dash_workId;
