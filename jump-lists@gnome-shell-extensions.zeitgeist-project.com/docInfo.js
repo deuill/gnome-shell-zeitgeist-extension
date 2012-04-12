@@ -24,8 +24,8 @@ ZeitgeistItemInfo.prototype = {
         this.mimeType = this.subject.mimetype;
         this.interpretation = this.subject.interpretation;
 
-	// FIXME: It would seem slightly more efficient to have this shared, but to minimize structural changes in this commit, I've just left it here for the moment.
-	this.thumbnail_factory = new GnomeDesktop.DesktopThumbnailFactory();
+        // FIXME: It would seem slightly more efficient to have this shared, but to minimize structural changes in this commit, I've just left it here for the moment.
+        this.thumbnail_factory = new GnomeDesktop.DesktopThumbnailFactory();
     },
 
     createIcon : function(size) {
@@ -45,35 +45,29 @@ ZeitgeistItemInfo.prototype = {
 		/* Can we make one? */
 		if (this.thumbnail_factory.can_thumbnail(this.uri, this.subject.mimetype, null))
 		{
-			/* Allegedly. If it doesn't work, make a failed thumbnail, if it does save the new one */
+			/* Allegedly. Let's try. */
 			pixbuf = this.thumbnail_factory.generate_thumbnail(this.uri, this.subject.mimetype, mtime);
-			if (pixbuf === null)
+			if (pixbuf !== null)
 			{
-				pixbuf = this.thumbnail_factory.create_failed_thumbnail(this.uri, mtime);
-			} else {
 				this.thumbnail_factory.save_thumbnail(pixbuf, this.uri, mtime);
+				// This may be excessive, reloading a newly created pixbuf, but it seems cleaner and more succinct to let ClutterTexture
+				// handle it as a new file instead of writing our own routine to convert a pixbuf
+				existing_thumb = this.thumbnail_factory.lookup(this.uri, mtime);
 			}
-		} else {
-			/* If we can't make a thumbnail, choose a generic example */
-			icon = St.TextureCache.get_default().load_gicon(null, Gio.content_type_get_icon(this.subject.mimetype), size);
 		}
+	}
+
+	/* If we can't make a thumbnail, choose a generic example */
+	if (existing_thumb === null) {
+		icon = St.TextureCache.get_default().load_gicon(null, Gio.content_type_get_icon(this.subject.mimetype), size);
 	} else {
 		/* Don't need to bother with this pixbuf malarky if we've got the filename */
 		icon = new Clutter.Texture({filename: existing_thumb});
-	}
-
-	/* If we ended up with a pixbuf, turn it into an icon */
-	if (icon === null)
-	{
-		icon = new Clutter.Texture();
-		let scalingFactor = size / Math.max(pixbuf.get_width(), pixbuf.get_height());
-		icon.set_width(Math.ceil(pixbuf.get_width() * scalingFactor));
-		icon.set_height(Math.ceil(pixbuf.get_height() * scalingFactor));
-		icon.set_from_rgb_data(pixbuf.get_pixels(), pixbuf.has_alpha, pixbuf.get_width(), pixbuf.get_height(), pixbuf.get_rowstride(), 4, 0, null);
+		icon.set_keep_aspect_ratio(true);
 	}
 	
         return icon;
-        // FIXME: "FM: We should consider caching icons" - would sharing the thumbnail_factory do the job?
+        // FIXME: "FM: We should consider caching icons" - is this sufficient for what you mean?
     },
 
     launch : function() {
