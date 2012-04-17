@@ -28,14 +28,14 @@ const Gio = imports.gi.Gio;
 const Shell = imports.gi.Shell;
 const AppWellIcon = imports.ui.appDisplay.AppWellIcon;
 
-const Extension = imports.ui.extensionSystem.extensions["zeitgeist-search@gnome-shell-extensions.gnome.org"];
+const Me = imports.misc.extensionUtils.getCurrentExtension();
 
 const Gettext = imports.gettext.domain('gnome-shell');
 const _ = Gettext.gettext;
 
-const DocInfo = Extension.docInfo;
-const Semantic = Extension.semantic;
-const Zeitgeist = Extension.zeitgeist;
+const DocInfo = Me.imports.docInfo;
+const Semantic = Me.imports.semantic;
+const Zeitgeist = Me.imports.zeitgeist;
 
 const Search = imports.ui.search;
 
@@ -51,6 +51,7 @@ ZeitgeistAsyncSearchProvider.prototype = {
 
     _init: function(title, interpretations) {
         Search.SearchProvider.prototype._init.call(this, title);
+        this.async = true;
         this._buildTemplates(interpretations);
     },
 
@@ -73,27 +74,29 @@ ZeitgeistAsyncSearchProvider.prototype = {
                                  }));
     },
 
-    _asyncCancelled: function() {
-        this._search_terms = null;
-    },
-
-    getInitialResultSet: function(terms) {
+    getInitialResultSetAsync: function(terms) {
         this._search(terms);
-        return [];
     },
 
-    getSubsearchResultSet: function(previousResults, terms) {
-        this.tryCancelAsync();
-        return this.getInitialResultSet(terms);
+    getSubsearchResultSetAsync: function(previousResults, terms) {
+        this.getInitialResultSetAsync(terms);
     },
 
-    getResultMeta: function(resultId) {
-        return { 'id': ZeitgeistSubjectCache[resultId].uri,
-                 'name': ZeitgeistSubjectCache[resultId].name,
-                 'createIcon': function (size) {
+    //FIXME: From reading the previous impl I think this should be as follows, but I haven't entirely understood the Async system and whether this _must_ get the callback to wait for the results to come through (or whether this is called after pushResults, which would make more sense)
+    getResultMetasAsync: function(resultIds, callback) {
+        let items = [];
+        for (let i = 0; i < resultIds.length; i++) {
+                resultId = resultIds[i];
+                items.push(
+                         { 'id': ZeitgeistSubjectCache[resultId].uri,
+                         'name': ZeitgeistSubjectCache[resultId].name,
+                         'createIcon': function (size) {
                                    return ZeitgeistSubjectCache[resultId].createIcon(size);
                                },
-               };
+                               }
+                );
+        }
+        callback(items);
     },
 
     activateResult: function(resultId) {
@@ -116,7 +119,7 @@ ZeitgeistAsyncSearchProvider.prototype = {
                 items.push(subject.uri);
             }
         }
-        this.addItems(items);
+        this.searchSystem.pushResults(this, items);
     }
 };
 
@@ -218,6 +221,7 @@ AppAsyncSearchProvider.prototype = {
 
     _init: function() {
         Search.SearchProvider.prototype._init.call(this, _("APPLICATIONS"));
+        this.async = true;
         this._appSys = Shell.AppSystem.get_default();
         let subject = new Zeitgeist.Subject('application://*', '', '', '', '', '', '');
         this.templates = [new Zeitgeist.Event('http://www.zeitgeist-project.com/ontologies/2010/01/27/zg#AccessEvent',
@@ -234,29 +238,28 @@ AppAsyncSearchProvider.prototype = {
                                  }));
     },
 
-    _asyncCancelled: function() {
-        this._search_terms = null;
-    },
-
-    getInitialResultSet: function(terms) {
+    getInitialResultSetAsync: function(terms) {
         this._search(terms);
-        return [];
     },
 
-    getSubsearchResultSet: function(previousResults, terms) {
-        this.tryCancelAsync();
-        return this.getInitialResultSet(terms);
+    getSubsearchResultSetAsync: function(previousResults, terms) {
+        this.getInitialResultSetAsync(terms);
     },
 
-    getResultMeta: function(app) {
-        if (app != undefined) {
-            return { 'id': app,
-                 'name': app.get_name(),
-                 'createIcon': function(size) {
-                                   return app.create_icon_texture(size);
-                               }
-               };
+    getResultMetasAsync: function(apps, callback) {
+        let items = [];
+        for ( let i = 0 ; i < apps.length ; i++ ) {
+                app = apps[i];
+                if (app != undefined) {
+                    items.push({ 'id': app,
+                         'name': app.get_name(),
+                         'createIcon': function(size) {
+                                           return app.create_icon_texture(size);
+                                       }
+                       });
+                }
         }
+        callback(items);
     },
 
     activateResult: function(app, params) {
@@ -300,7 +303,7 @@ AppAsyncSearchProvider.prototype = {
                 sortedMap.push(defaultApps[i]);
         }
         
-        this.addItems(sortedMap);
+        this.searchSystem.pushResults(this, sortedMap);
     },
     
     createResultActor: function (resultMeta, terms) {
@@ -321,6 +324,7 @@ SettingsAsyncSearchProvider.prototype = {
 
     _init: function() {
         Search.SearchProvider.prototype._init.call(this, _("SETTINGS"));
+        this.async = true;
         this._appSys = Shell.AppSystem.get_default();
         this._gnomecc = this._appSys.lookup_app('gnome-control-center.desktop');
         let subject = new Zeitgeist.Subject('application://*', '', '', '', '', '', '');
@@ -338,29 +342,28 @@ SettingsAsyncSearchProvider.prototype = {
                                  }));
     },
 
-    _asyncCancelled: function() {
-        this._search_terms = null;
-    },
-
-    getInitialResultSet: function(terms) {
+    getInitialResultSetAsync: function(terms) {
         this._search(terms);
-        return [];
     },
 
-    getSubsearchResultSet: function(previousResults, terms) {
-        this.tryCancelAsync();
-        return this.getInitialResultSet(terms);
+    getSubsearchResultSetAsync: function(previousResults, terms) {
+        this.getInitialResultSetAsync(terms);
     },
 
-    getResultMeta: function(app) {
-        if (app != undefined) {
-            return { 'id': app,
-                 'name': app.get_name(),
-                 'createIcon': function(size) {
-                                   return app.create_icon_texture(size);
-                               }
-               };
+    getResultMetasAsync: function(apps, callback) {
+        let items = [];
+        for ( let i = 0 ; i < apps.length ; i++ ) {
+                app = apps[i];
+                if (app != undefined) {
+                    items.push({ 'id': app,
+                         'name': app.get_name(),
+                         'createIcon': function(size) {
+                                           return app.create_icon_texture(size);
+                                       }
+                       });
+                }
         }
+        callback(items);
     },
 
     activateResult: function(app, params) {
@@ -404,7 +407,7 @@ SettingsAsyncSearchProvider.prototype = {
                 sortedMap.push(defaultApps[i]);
         }
         
-        this.addItems(sortedMap);
+        this.searchSystem.pushResults(this, sortedMap);
     },
     
     createResultActor: function (resultMeta, terms) {

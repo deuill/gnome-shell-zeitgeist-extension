@@ -1,6 +1,9 @@
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
+const Clutter = imports.gi.Clutter;
 const Gio = imports.gi.Gio;
+const GLib = imports.gi.GLib;
+const GnomeDesktop = imports.gi.GnomeDesktop;
 const St = imports.gi.St;
 const Search = imports.ui.search;
 
@@ -20,12 +23,51 @@ ZeitgeistItemInfo.prototype = {
             this.subject.mimetype = "audio/mpeg";
         this.mimeType = this.subject.mimetype;
         this.interpretation = this.subject.interpretation;
+
+        // FIXME: It would seem slightly more efficient to have this shared, but to minimize structural changes in this commit, I've just left it here for the moment.
+        this.thumbnail_factory = new GnomeDesktop.DesktopThumbnailFactory();
     },
 
     createIcon : function(size) {
-        let x = St.TextureCache.get_default().load_thumbnail(size, this.uri, this.subject.mimetype);
-        return x;
-        // FIXME: We should consider caching icons
+	let icon = null;
+	let pixbuf = null;
+	let mtimeval = new GLib.TimeVal();
+        Gio.file_new_for_uri(this.uri).query_info("time::modified", Gio.FileQueryInfoFlags.NONE, null).get_modification_time(mtimeval);
+	let mtime = mtimeval.tv_sec;
+
+	/* Based on shell-texture-cache.c : gnome-shell */
+
+	/* Check whether a thumb has been made */
+	existing_thumb = this.thumbnail_factory.lookup(this.uri, mtime);
+
+	/* If not, make one */
+	if (existing_thumb === null) {
+		/* Can we make one? */
+		if (this.thumbnail_factory.can_thumbnail(this.uri, this.subject.mimetype, null))
+		{
+			/* Allegedly. Let's try. */
+			pixbuf = this.thumbnail_factory.generate_thumbnail(this.uri, this.subject.mimetype, mtime);
+			if (pixbuf !== null)
+			{
+				this.thumbnail_factory.save_thumbnail(pixbuf, this.uri, mtime);
+				// This may be excessive, reloading a newly created pixbuf, but it seems cleaner and more succinct to let ClutterTexture
+				// handle it as a new file instead of writing our own routine to convert a pixbuf
+				existing_thumb = this.thumbnail_factory.lookup(this.uri, mtime);
+			}
+		}
+	}
+
+	/* If we can't make a thumbnail, choose a generic example */
+	if (existing_thumb === null) {
+		icon = St.TextureCache.get_default().load_gicon(null, Gio.content_type_get_icon(this.subject.mimetype), size);
+	} else {
+		/* Don't need to bother with this pixbuf malarky if we've got the filename */
+		icon = new Clutter.Texture({filename: existing_thumb});
+		icon.set_keep_aspect_ratio(true);
+	}
+	
+        return icon;
+        // FIXME: "FM: We should consider caching icons" - is this sufficient for what you mean?
     },
 
     launch : function() {
