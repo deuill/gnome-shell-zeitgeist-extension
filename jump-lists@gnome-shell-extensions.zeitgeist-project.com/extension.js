@@ -44,6 +44,7 @@ function setJumplist (appIconMenu) {
             item.connect('activate', Lang.bind(appIconMenu, function () {
                 let app = new Gio.DesktopAppInfo.new(appIconMenu._source.app.get_id());
                 app.launch_uris([info.uri], null);
+                Main.overview.hide();
             }));
         }
 
