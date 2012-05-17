@@ -34,7 +34,6 @@ Jumplist.prototype = {
   remove: function(jumplist_callback){
     if(AppDisplay.AppIconMenu.prototype._redisplay_jumplists !== undefined){
       for(let i in AppDisplay.AppIconMenu.prototype._redisplay_jumplists){
-        global.log(AppDisplay.AppIconMenu.prototype._redisplay_jumplists[i]);
         if(AppDisplay.AppIconMenu.prototype._redisplay_jumplists[i] == jumplist_callback){
           AppDisplay.AppIconMenu.prototype._redisplay_jumplists.splice(i, 1);
           break;
