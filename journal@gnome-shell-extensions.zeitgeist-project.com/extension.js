@@ -1,4 +1,3 @@
-
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
         
 /* JournalDisplay object to show a timeline of the user's past activities
@@ -48,6 +47,7 @@ const DocInfo = Me.imports.docInfo;
 const Semantic = Me.imports.semantic;
 const Zeitgeist = Me.imports.zeitgeist;
 const ViewSelector = imports.ui.viewSelector;
+const Dash = imports.ui.dash;
 
 
 //*** JournalLayout ***
@@ -517,8 +517,12 @@ function HeadingItem (label_text) {
 HeadingItem.prototype = {
     _init: function (label_text) {
         this._label_text = label_text;
-        this.actor = new St.Label ({ text: this._label_text.toUpperCase(),
-            style_class: 'journal-heading',});
+        this.actor = new St.Button({ 
+                    label: this._label_text.toUpperCase(),
+                    style_class: 'journal-heading',
+                    x_align: St.Align.START,
+                    y_align: St.Align.START,
+                    can_focus: true });
     }
 };
 
@@ -594,14 +598,14 @@ SubJournal.prototype = {
         this._container.connect ("get-preferred-height", Lang.bind (this, this._getPreferredHeight));
         //this._container.add_actor(label.actor);
         this._header = new St.BoxLayout({ vertical: false, style_class: 'journal-heading-box'});
-        this._box.add_actor (this._header, { x_align: St.Align.START, y_align: St.Align.START, expand: true, x_fill: true, y_fill: false });
+        if (label != null)
+          this._box.add_actor (this._header, { x_align: St.Align.START, y_align: St.Align.START, expand: true, x_fill: true, y_fill: false });
         this._box.add_actor (this._container, { expand: true, x_fill: true, y_fill: true});
         this.actor = this._box;
         this._label = label;
         this._inserted_items = [];
         this._expanded = false;
-        
-        
+        this._headingItem = null;
         this.refresh();
     },
     
@@ -620,17 +624,15 @@ SubJournal.prototype = {
             this._header.remove_actor(widgets[i]);
         }
         
-        
-        var heading = new HeadingItem(this._label);
-        
-        //this.appendItem (heading);
-        
-        this._header.add_actor(heading.actor, {x_align: St.Align.START, y_align: St.Align.START, expand: true, x_fill: true, y_fill: true });
-        
+        if(this._label != null) {
+          this._headingItem = new HeadingItem(this._label);
+          //this.appendItem (heading);
+          this._header.add_actor(this._headingItem.actor, {x_align: St.Align.START, y_align: St.Align.START, expand: true, x_fill: true, y_fill: true });
+        }
         Zeitgeist.findEvents (this._timerange,            // time_range
                               [this._template],           // event_templates
                               Zeitgeist.StorageState.ANY, // storage_state - FIXME: should we use AVAILABLE instead?
-                              0,                          // num_events - 0 for "as many as you can"
+                              90,                          // num_events - 0 for "as many as you can"
                               this._sorting, // result_type
                               Lang.bind (this, this._appendEvents));
     },
@@ -678,6 +680,9 @@ SubJournal.prototype = {
                     if (inserted <= this._item_limit) {
                         this.appendItem (item);
                         this.appendHSpace ();
+                        if (inserted % 5 == 0) {
+                          this.appendNewline();
+                        }
                     }
                 }
             }
@@ -703,15 +708,9 @@ SubJournal.prototype = {
                 }));
             }
             else if (this._label in SubjCategories) {
-                this._moreButton = new St.Button({ 
-                    label: GLib.markup_escape_text ("(Show More...)", -1),
-                    style_class: 'journal-heading',
-                    x_align: St.Align.START,
-                    y_align: St.Align.START,
-                    can_focus: true });
-                this._header.add(this._moreButton, {x_align: St.Align.START, y_align: St.Align.START, expand: true, x_fill: true, y_fill: true });
+                //this._header.add(this._moreButton, {x_align: St.Align.START, y_align: St.Align.START, expand: true, x_fill: true, y_fill: true });
                 
-                this._moreButton.connect('clicked', Lang.bind(this, function() {
+                this._headingItem.actor.connect('clicked', Lang.bind(this, function() {
                     [arg, func] = SubjCategories[this._label];
                 func._selectCategory(arg);
                 }));
@@ -903,7 +902,7 @@ JournalLayout.prototype = {
             template.subjects[0].interpretation = Semantic.NFO_DOCUMENT;
             this._containers["Documents"] = new SubJournal ("Documents", 
                 [start, end], eval(uneval(template)), sorting, multi_select, uri_map, true);
-            this._box.add_actor (this._containers["Documents"].actor, { y_align: St.Align.START, expand: true, x_fill: true, y_fill: true });
+            this._box.add_actor (this._containers["Documents"].actor, { x_align: St.Align.JUSTIFY, y_align: St.Align.START, expand: true, x_fill: true, y_fill: true });
             
             template.subjects[0].interpretation = Semantic.NFO_AUDIO;
             this._containers["Music"] = new SubJournal ("Music", 
@@ -939,7 +938,7 @@ JournalLayout.prototype = {
         
         else{
             var start = end - 86400000
-            this._containers["Today"] = new SubJournal ("Today", 
+            this._containers["Today"] = new SubJournal (null, 
                 [start, end], template, sorting, multi_select, uri_map, false);
             this._box.add_actor (this._containers["Today"].actor, { y_align: St.Align.START, expand: true, x_fill: true, y_fill: true });
             
@@ -1070,34 +1069,46 @@ function JournalDisplay () {
 
 JournalDisplay.prototype = {
     _init: function () {
+
         this.box = new St.BoxLayout({style_class: 'all-app' });
+        this._layout = new JournalLayout ();
         this._scroll_view = new St.ScrollView({ x_fill: false,
                                    y_fill: false,
                                    style_class: 'vfade' });
-                             
         this._scroll_view.set_policy (Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
         this._scroll_view.connect ("notify::mapped", Lang.bind (this, this._scrollViewMapCb));
+        this.active = false;
+
+        this._backButton = new St.Button({ style_class: 'journal-back',
+                                            track_hover: true,
+                                            can_focus: true});
+        this._icon = new St.Icon({ icon_name: 'go-previous-symbolic',
+                                        icon_size: 64});
+        this._backButton.add_actor(this._icon, {expand: true, x_fill: false, y_fill: true });
+        this._spaceBox = new St.BoxLayout();
+        this._spaceBox.add(new St.BoxLayout(), { expand: true, x_fill: true, y_fill: true , x_align: St.Align.START});
+        this._spaceBox.add(this._backButton, { expand: true, x_fill: false, y_fill: true , x_align: St.Align.START});
+        this._spaceBox.add(new St.Label ({ text: "   "}), { expand: false, x_fill: true, y_fill: true , x_align: St.Align.START});
         
-        this._layout = new JournalLayout ();
+        this._backButton.connect ('clicked', Lang.bind(this, function () {this._selectCategory(0);}));
         
-        this._filters = new St.BoxLayout({ vertical: true, reactive: true });
-        this._scroll_view.add_actor(this._layout.actor, { expand: true, y_fill: true,y_align: St.Align.START, x_fill: true });
-        
-        this._categoryScroll = new St.ScrollView({ x_fill: false,
-                                                   y_fill: false,
-                                                   style_class: 'vfade' });
-        this._categoryScroll.add_actor(this._filters);
-        
-        this.box.add(this._scroll_view, { expand: true, x_fill: true, y_fill: true });
-        this.box.add_actor(this._categoryScroll, { expand: false, y_fill: false, y_align: St.Align.START  });
-        
+        this._scroll_view.add_actor(this._layout.actor, { expand: false, x_fill: false, y_fill: true, y_align: St.Align.START});
+        this.box.add(this._spaceBox, { expand: false, x_fill: false, y_fill: true , x_align: St.Align.START});
+        this.box.add(this._scroll_view, { expand: true, x_fill: true, y_fill: true , x_align: St.Align.START});
+        this._layout.actor.set_width(1000)
         this.actor = this.box;
-        this._sections = [];
+        this.active = false;
         this._setFilters();
-        this._selectCategory(1);
-        //this._filters.connect('scroll-event', Lang.bind(this, this._scrollFilter))
+        this._selectCategory(0);
+        this._allocate()
     },
     
+    _allocate: function () {
+        let width = Main.overview._viewSelector.actor.get_width() - 1000;
+        width = width / 2;
+        this._spaceBox.set_width(width);
+    },
+
     _scrollFilter: function(actor, event) {
         let direction = event.get_scroll_direction();
         if (direction == Clutter.ScrollDirection.UP)
@@ -1108,17 +1119,13 @@ JournalDisplay.prototype = {
 
     _selectCategory: function(num) {
         this._currentCategory = num;
-
-        for (let i = 0; i < this._sections.length; i++) {
-            if (i == num)
-                this._sections[i].add_style_pseudo_class('selected');
-            else
-                this._sections[i].remove_style_pseudo_class('selected');
-        }
-        
         var b = false;
-        if (num > 3) 
+        if (num > 0) {
             b= true;
+            this._backButton.show();
+        }
+        else
+            this._backButton.hide();
         this._layout._setUpTimeViews(b, this._categories[num]);
     },
     
@@ -1126,15 +1133,15 @@ JournalDisplay.prototype = {
     {   
         this._counter = 0;
         this._categories = [];
-        this._addCategory(new NewCategory());
+        //this._addCategory(new NewCategory());
         this._addCategory(new RecentCategory());
-        this._addCategory(new FrequentCategory());
+        //this._addCategory(new FrequentCategory());
         //this._addCategory(new StarredCategory());
-        this._addCategory(new SharedCategory());
+        //this._addCategory(new SharedCategory());
         
-        var space = new St.Label ({ text: "",
-                                     style_class: 'app-filter' });
-        this._filters.add(space, { expand: false, x_fill: true, y_fill: false });
+        //var space = new St.Label ({ text: "",
+        //                             style_class: 'app-filter' });
+        //this._filters.add(space, { expand: false, x_fill: true, y_fill: false });
         
         this._addCategory(new DocumentsCategory(), true);
         this._addCategory(new MusicCategory(), true);
@@ -1148,18 +1155,7 @@ JournalDisplay.prototype = {
     
     _addCategory: function (category, linkable)
     {
-        let button = new St.Button({ label: GLib.markup_escape_text (category.title, -1),
-                                     style_class: 'app-filter',
-                                     x_align: St.Align.START,
-                                     can_focus: true });
-        this._filters.add(button, { expand: false, x_fill: true, y_fill: false });
-       
-        this._sections[this._counter] = button;
-        
         var x = this._counter;
-        button.connect('clicked', Lang.bind(this, function() {
-            this._selectCategory(x);
-        }));
         this._categories.push(category);
         this._counter = this._counter + 1;
         
@@ -1221,7 +1217,7 @@ function RecentCategory() {
 RecentCategory.prototype = {
     __proto__: CategoryInterface.prototype,
     _init: function() {
-        CategoryInterface.prototype._init.call(this, _("Recently Used"));
+        CategoryInterface.prototype._init.call(this, _("All"));
         let subject = new Zeitgeist.Subject ("", "", "", "", "", "", "");
         this.event_template = new Zeitgeist.Event("", "", "", [subject], []);
         this.time_range = 86400000*7;
@@ -1411,6 +1407,37 @@ OtherCategory.prototype = {
     },
 };
 
+const ShowRecentIcon = new Lang.Class({
+    Name: 'ShowRecentIcon',
+    Extends: Dash.DashItemContainer,
+
+    _init: function() {
+        this.parent();
+
+        this.toggleButton = new St.Button({ style_class: 'show-apps',
+                                            track_hover: true,
+                                            can_focus: true,
+                                            toggle_mode: true });
+        this._iconActor = null;
+        this.icon = new IconGrid.BaseIcon(_("Show Recent Items"),
+                                           { setSizeManually: true,
+                                             showLabel: false,
+                                             createIcon: Lang.bind(this, this._createIcon) });
+        this.toggleButton.add_actor(this.icon.actor);
+        this.toggleButton._delegate = this;
+
+        this.setChild(this.toggleButton);
+        this.toggleButton.label_actor = this.label;
+    },
+
+    _createIcon: function(size) {
+        this._iconActor = new St.Icon({ icon_name: 'document-open-recent-symbolic',
+                                        icon_size: size,
+                                        style_class: 'show-apps-icon',
+                                        track_hover: true });
+        return this._iconActor;
+    },
+});
 
 let journalView;
 let viewTab;
@@ -1421,17 +1448,77 @@ function init(metadata)
     imports.gettext.bindtextdomain('gnome-shell-extensions', Config.LOCALEDIR);
 }
 
+
 function enable() {
     journalView = new JournalDisplay();
-    Main.overview._viewSelector.addViewTab('journal', _("Journal"), journalView.actor, 'history');
-    viewTab = Main.overview._viewSelector._tabs[Main.overview._viewSelector._tabs.length-1];
-    tabIndex = Main.overview._viewSelector._tabs.length - 1;
+    let journalPage = Main.overview._viewSelector._addPage(journalView.actor, null, 'journal', null);
+    journalPage.hide();
+    let active = true;
+    let showRecentIcon = new ShowRecentIcon();
+    let showRecentButton = showRecentIcon.toggleButton;
+    Main.overview._dash._box.insert_child_at_index(showRecentIcon.actor, 0);
+
+    Main.overview.connect('showing', Lang.bind(this,
+            function () {
+              showRecentButton.checked = false
+            }));
+
+    Main.overview._viewSelector._showAppsButton.connect_after('notify::checked', Lang.bind(this, function () 
+      {
+        if (Main.overview._viewSelector._showAppsButton.checked)
+          showRecentButton.checked = false;
+      }));
+
+    showRecentButton.connect('notify::checked', Lang.bind(this, function()
+      {
+          if (Main.overview._viewSelector.active)
+            Main.overview._viewSelector.reset();
+          else {
+            if (showRecentButton.checked) {
+              Main.overview._viewSelector.active = true;
+              Main.overview._viewSelector._showAppsButton.checked = false;
+              Main.overview._viewSelector._showPage(journalPage);
+              Main.overview._viewSelector.active = false;
+            }
+            else if (Main.overview._viewSelector._showAppsButton.checked == false)
+                Main.overview._viewSelector._showPage(Main.overview._viewSelector._workspacesPage);
+          }
+      }));
+
+/*
+    let origSearchCancelled = ViewSelector.ViewSelector.prototype._searchCancelled;
+    ViewSelector.ViewSelector.prototype._searchCancelled = function () {
+        //origSearchCancelled.call(this);
+        if (this._text.text != '')
+            this.reset();
+        if (Main.overview._viewSelector.active)
+              Main.overview._viewSelector.reset();
+        else {
+          if (showRecentButton.checked) {
+            Main.overview._viewSelector.active = true;
+            Main.overview._viewSelector._showPage(journalPage);
+            Main.overview._viewSelector.active = false;
+          }
+          else if (Main.overview._viewSelector._showAppsButton.checked == false) {
+            Main.overview._viewSelector.active = true;
+            Main.overview._viewSelector._showPage(Main.overview._viewSelector._workspacesPage);
+            Main.overview._viewSelector.active = false;
+          }
+          else {
+            Main.overview._viewSelector.active = true;
+            Main.overview._viewSelector._showPage(Main.overview._viewSelector._appsPage);
+            Main.overview._viewSelector.active = false;
+          }
+        }
+    };
+*/
 }
 
 function disable() {
-    Main.overview._viewSelector._tabBox.remove_actor(viewTab.title);
+    /*Main.overview._viewSelector._tabBox.remove_actor(viewTab.title);
     Main.overview._viewSelector._pageArea.remove_actor(viewTab.page);
     Main.overview._viewSelector._tabs.splice(tabIndex, tabIndex);
     journalView.actor.destroy();
     journalView = undefined
+    */
 }

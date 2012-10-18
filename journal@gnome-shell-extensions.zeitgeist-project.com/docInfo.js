@@ -29,43 +29,26 @@ ZeitgeistItemInfo.prototype = {
     },
 
     createIcon : function(size) {
-	let icon = null;
-	let pixbuf = null;
-	let mtimeval = new GLib.TimeVal();
+  let icon = null;
+  let pixbuf = null;
+  let mtimeval = new GLib.TimeVal();
         Gio.file_new_for_uri(this.uri).query_info("time::modified", Gio.FileQueryInfoFlags.NONE, null).get_modification_time(mtimeval);
-	let mtime = mtimeval.tv_sec;
+  let mtime = mtimeval.tv_sec;
 
-	/* Based on shell-texture-cache.c : gnome-shell */
+  /* Based on shell-texture-cache.c : gnome-shell */
 
-	/* Check whether a thumb has been made */
-	existing_thumb = this.thumbnail_factory.lookup(this.uri, mtime);
+  /* Check whether a thumb has been made */
+  let existing_thumb = this.thumbnail_factory.lookup(this.uri, mtime);
 
-	/* If not, make one */
-	if (existing_thumb === null) {
-		/* Can we make one? */
-		if (this.thumbnail_factory.can_thumbnail(this.uri, this.subject.mimetype, null))
-		{
-			/* Allegedly. Let's try. */
-			pixbuf = this.thumbnail_factory.generate_thumbnail(this.uri, this.subject.mimetype, mtime);
-			if (pixbuf !== null)
-			{
-				this.thumbnail_factory.save_thumbnail(pixbuf, this.uri, mtime);
-				// This may be excessive, reloading a newly created pixbuf, but it seems cleaner and more succinct to let ClutterTexture
-				// handle it as a new file instead of writing our own routine to convert a pixbuf
-				existing_thumb = this.thumbnail_factory.lookup(this.uri, mtime);
-			}
-		}
-	}
-
-	/* If we can't make a thumbnail, choose a generic example */
-	if (existing_thumb === null) {
-		icon = St.TextureCache.get_default().load_gicon(null, Gio.content_type_get_icon(this.subject.mimetype), size);
-	} else {
-		/* Don't need to bother with this pixbuf malarky if we've got the filename */
-		icon = new Clutter.Texture({filename: existing_thumb});
-		icon.set_keep_aspect_ratio(true);
-	}
-	
+  /* If we can't make a thumbnail, choose a generic example */
+  if (existing_thumb === null) {
+    icon = St.TextureCache.get_default().load_gicon(null, Gio.content_type_get_icon(this.subject.mimetype), size);
+  } else {
+    /* Don't need to bother with this pixbuf malarky if we've got the filename */
+    icon = new Clutter.Texture({filename: existing_thumb});
+    icon.set_keep_aspect_ratio(true);
+  }
+  
         return icon;
         // FIXME: "FM: We should consider caching icons" - is this sufficient for what you mean?
     },

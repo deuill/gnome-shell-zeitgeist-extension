@@ -5,18 +5,19 @@
     border-radius: 4px;
     spacing: 6px;
     padding: 3px;
-    border: 6px;
-    font-size: 7.5pt;
+    font-size: 10pt;
     color: white;
     transition-duration: 100;
     text-align: center;
 }
 
 .journal-item .overview-icon {
+    border-radius: 4px;
     icon-size: 96px;
 }
 
 .journal-item:hover {
+    border-radius: 4px;
     background-color: rgba(255,255,255,0.1);
     text-shadow: black 0px 2px 2px;
     transition-duration: 100;
@@ -24,6 +25,7 @@
 
 /* same as journal-item:hover, for multi-selection */
 .journal-item-selection {
+    border-radius: 4px;
     background-color: rgba(255,255,255,0.1);
     text-shadow: black 0px 2px 2px;
     transition-duration: 100;
@@ -38,6 +40,17 @@
 
 .journal-heading:hover {
     color: #fff;
+}
+
+.journal-back {
+    border-radius: 4px;
+    background-color: rgba(255,255,255,0.0);
+    text-shadow: black 0px 2px 2px;
+    transition-duration: 100;
+}
+
+.journal-back:hover {
+    background-color: rgba(255,255,255,0.1);
 }
 
 .journal-heading-box {
