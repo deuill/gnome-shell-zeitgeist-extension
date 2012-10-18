@@ -1458,6 +1458,7 @@ function enable() {
     let showRecentButton = showRecentIcon.toggleButton;
     Main.overview._dash._box.insert_child_at_index(showRecentIcon.actor, 0);
 
+
     Main.overview.connect('showing', Lang.bind(this,
             function () {
               showRecentButton.checked = false
@@ -1484,34 +1485,6 @@ function enable() {
                 Main.overview._viewSelector._showPage(Main.overview._viewSelector._workspacesPage);
           }
       }));
-
-/*
-    let origSearchCancelled = ViewSelector.ViewSelector.prototype._searchCancelled;
-    ViewSelector.ViewSelector.prototype._searchCancelled = function () {
-        //origSearchCancelled.call(this);
-        if (this._text.text != '')
-            this.reset();
-        if (Main.overview._viewSelector.active)
-              Main.overview._viewSelector.reset();
-        else {
-          if (showRecentButton.checked) {
-            Main.overview._viewSelector.active = true;
-            Main.overview._viewSelector._showPage(journalPage);
-            Main.overview._viewSelector.active = false;
-          }
-          else if (Main.overview._viewSelector._showAppsButton.checked == false) {
-            Main.overview._viewSelector.active = true;
-            Main.overview._viewSelector._showPage(Main.overview._viewSelector._workspacesPage);
-            Main.overview._viewSelector.active = false;
-          }
-          else {
-            Main.overview._viewSelector.active = true;
-            Main.overview._viewSelector._showPage(Main.overview._viewSelector._appsPage);
-            Main.overview._viewSelector.active = false;
-          }
-        }
-    };
-*/
 }
 
 function disable() {
