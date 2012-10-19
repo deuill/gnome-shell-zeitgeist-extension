@@ -29,6 +29,9 @@ const DocInfo = Me.imports.docInfo;
 const Semantic = Me.imports.semantic;
 const Zeitgeist = Me.imports.zeitgeist;
 
+const Jumplist = Me.imports.jumplist_hack;
+let jumplist = new Jumplist.Jumplist();
+
 function setJumplist (appIconMenu) {
     var eventTemplate = new Zeitgeist.Event('', '', "application://" + appIconMenu._source.app.get_id(), [], []);
     
@@ -44,6 +47,7 @@ function setJumplist (appIconMenu) {
             item.connect('activate', Lang.bind(appIconMenu, function () {
                 let app = new Gio.DesktopAppInfo.new(appIconMenu._source.app.get_id());
                 app.launch_uris([info.uri], null);
+                Main.overview.hide();
             }));
         }
 
@@ -98,16 +102,10 @@ function init(metadata) {
     imports.gettext.bindtextdomain('gnome-shell-extensions', Config.LOCALEDIR);
 }
 
-let origRedisplay = null;
-
 function enable() {
-    origRedisplay = AppDisplay.AppIconMenu.prototype._redisplay;
-    AppDisplay.AppIconMenu.prototype._redisplay = function () {
-        origRedisplay.call(this);
-        setJumplist(this);
-    };
+    jumplist.add(setJumplist);
 }
 
 function disable() {
-    AppDisplay.AppIconMenu.prototype._redisplay = origRedisplay;
+    jumplist.remove(setJumplist);
 }
