@@ -42,11 +42,18 @@ function setJumplist (appIconMenu) {
 
         function appendJumplistItem (event, type) {
             let info = new DocInfo.ZeitgeistItemInfo(event);
-            let item = new PopupMenu.PopupImageMenuItem(info.name, type);
+            let item = new PopupMenu.PopupMenuItem(info.name);
+
+            item.iconbox = new St.BoxLayout({style_class: 'popup-menu-icons'});
+            item.actor.add(item.iconbox, {expand: true, x_fill: false, x_align: St.Align.END});
+
+            item.icon = new St.Icon({icon_name: type, style_class: 'popup-menu-icon'});
+            item.iconbox.add_actor(item.icon);
+
             appIconMenu.addMenuItem(item);
             item.connect('activate', Lang.bind(appIconMenu, function () {
-                let app = new Gio.DesktopAppInfo.new(appIconMenu._source.app.get_id());
-                app.launch_uris([info.uri], null);
+                let app = Shell.AppSystem.get_default().lookup_app(appIconMenu._source.app.get_id());
+                app.launch(0, [info.uri], null);
                 Main.overview.hide();
             }));
         }
@@ -56,7 +63,7 @@ function setJumplist (appIconMenu) {
                 count = 3;
             }
             if (type == null) {
-                type = "emblem-favorite";
+                type = "emblem-favorite-symbolic";
             }
             let j = 0;
 
@@ -80,7 +87,7 @@ function setJumplist (appIconMenu) {
             }
         }
         
-        appendEvents.call(this, events, 4, "document-open-recent");
+        appendEvents.call(this, events, 4, "document-open-recent-symbolic");
         Zeitgeist.findEvents([new Date().getTime() - 86400000*90, Zeitgeist.MAX_TIMESTAMP],
                              [eventTemplate],
                              Zeitgeist.StorageState.ANY,

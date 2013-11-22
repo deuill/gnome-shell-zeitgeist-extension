@@ -21,7 +21,7 @@
  * 02111-1307, USA.
  */
 
-const DBus = imports.dbus;
+const Gio = imports.gi.Gio;
 
 const SIG_EVENT = '(asaasay)';
 const MAX_TIMESTAMP = 9999999999999;
@@ -69,12 +69,12 @@ const StorageState = {
 
 /* Zeitgeist Subjects (files, people, etc.) */
 
-function Subject(uri, interpretation, manifestation, origin, mimetype, text, storage) {
+const Subject = function(uri, interpretation, manifestation, origin, mimetype, text, storage) {
     this._init(uri, interpretation, manifestation, origin, mimetype, text, storage);
 };
 
 Subject.prototype = {
-    _init: function(uri, interpretation, manifestation, origin, mimetype, text, storage) {
+    _init: function(uri, interpretation, manifestation, origin, mimetype, text, storage, uri2) {
         this.uri = uri;
         this.interpretation = interpretation;
         this.manifestation = manifestation;
@@ -82,17 +82,19 @@ Subject.prototype = {
         this.mimetype = mimetype;
         this.text = text;
         this.storage = storage;
-    },
+        this.uri2 = uri2;
+    }
 };
 
 Subject.fromPlain = function(rawSubject) {
-    return new Subject(rawSubject[0], // uri
-                       rawSubject[1], // interpretation
-                       rawSubject[2], // manifestation
-                       rawSubject[3], // origin
-                       rawSubject[4], // mimetype
-                       rawSubject[5], // text
-                       rawSubject[6]); // storage
+    return new Subject(rawSubject[7],  // current uri
+                       rawSubject[1],  // interpretation
+                       rawSubject[2],  // manifestation
+                       rawSubject[3],  // origin
+                       rawSubject[4],  // mimetype
+                       rawSubject[5],  // text
+                       rawSubject[6],  // storage
+                       rawSubject[0]); // uri
 };
 
 Subject.toPlain = function(subject) {
@@ -104,6 +106,7 @@ Subject.toPlain = function(subject) {
     rawSubject[4] = subject.mimetype;
     rawSubject[5] = subject.text;
     rawSubject[6] = subject.storage;
+    rawSubject[7] = subject.uri2;
     return rawSubject;
 };
 
@@ -117,7 +120,6 @@ Event.prototype = {
     _init: function(interpretation, manifestation, actor, subjects, payload) {
         this.id = 0;
         this.timestamp = 0;
-        this.actor = actor;
         this.interpretation = interpretation;
         this.manifestation = manifestation;
         this.actor = actor;
@@ -128,11 +130,11 @@ Event.prototype = {
 
 Event.fromPlain = function(rawEvent) {
     let subjects = rawEvent[1].map(Subject.fromPlain);
-    let event = new Event(rawEvent[0][2], // interpretation
-                          rawEvent[0][3], // manifestation
-                          rawEvent[0][4], // actor
-                          subjects, // subjects
-                          rawEvent[2]);// payload
+    let event = new Event(rawEvent[0][2],   // interpretation
+                          rawEvent[0][3],   // manifestation
+                          rawEvent[0][4],   // actor
+                          subjects,            // subjects
+                          rawEvent[2]);     // payload
     event.id = rawEvent[0][0]; // id
     event.timestamp = parseInt(rawEvent[0][1], 10); // timestamp - it comes as a string over d-bus (yuck)
     return event;
@@ -159,62 +161,61 @@ Event.toPlain = function(event) {
 
 const LOG_NAME = 'org.gnome.zeitgeist.Engine';
 const LOG_PATH = '/org/gnome/zeitgeist/log/activity';
-const LogIface = {
-    name: 'org.gnome.zeitgeist.Log',
-    methods: [
-        { name: 'GetEvents',
-          inSignature: 'au',
-          outSignature: 'a'+SIG_EVENT },
-        { name: 'FindRelatedUris',
-          inSignature: 'au',
-          outSignature: '(xx)a(' + SIG_EVENT + ')a'+ SIG_EVENT + 'uuu' },
-        { name: 'FindEventIds',
-          inSignature: '(xx)a' + SIG_EVENT + 'uuu',
-          outSignature: 'au' },
-        { name: 'FindEvents',
-          inSignature: '(xx)a' + SIG_EVENT + 'uuu',
-          outSignature: 'a' + SIG_EVENT },
-        { name: 'InsertEvents',
-          inSignature: 'a' + SIG_EVENT,
-          outSignature: 'au' },
-        { name: 'DeleteEvents',
-          inSignature: 'au',
-          outSignature: '(xx)' },
-        { name: 'DeleteLog',
-          inSignature: '',
-          outSignature: '' },
-        { name: 'Quit',
-          inSignature: '',
-          outSignature: '' },
-        // FIXME: Add missing DBus Methods
-        // - InstallMonitor
-        // - RemoveMonitor
-    ],
-    properties: [
-        { name: 'Get',
-          inSignature: 'ss',
-          outSignature: 'v',
-          access: 'read' },
-        { name: 'Set',
-          inSignature: 'ssv',
-          outSignature: '',
-          access: 'read' },
-        { name: 'GetAll',
-          inSignature: 's',
-          outSignature: 'a{sv}',
-          access: 'read' },
-    ]
-};
+const LogIface = 
+    '<interface name="org.gnome.zeitgeist.Log"> \
+        <method name="GetEvents"> \
+            <arg type="au" direction="in" /> \
+            <arg type="a' + SIG_EVENT + '" direction="out" /> \
+        </method> \
+        <method name="FindRelatedUris"> \
+            <arg type="au" direction="in" /> \
+            <arg type="(xx)" direction="out" /> \
+            <arg type="a(' + SIG_EVENT + ')" direction="out" /> \
+            <arg type="a'+ SIG_EVENT + '" direction="out" /> \
+            <arg type="u" direction="out" /> \
+            <arg type="u" direction="out" /> \
+            <arg type="u" direction="out" /> \
+        </method> \
+        <method name="FindEventIds"> \
+            <arg type="(xx)" direction="in" /> \
+            <arg type="a' + SIG_EVENT + '" direction="in" /> \
+            <arg type="u" direction="in" /> \
+            <arg type="u" direction="in" /> \
+            <arg type="u" direction="in" /> \
+            <arg type="au" direction="out" /> \
+        </method> \
+        <method name="FindEvents"> \
+            <arg type="(xx)" direction="in" /> \
+            <arg type="a' + SIG_EVENT + '" direction="in" /> \
+            <arg type="u" direction="in" /> \
+            <arg type="u" direction="in" /> \
+            <arg type="u" direction="in" /> \
+            <arg type="a' + SIG_EVENT + '" direction="out" /> \
+        </method> \
+        <method name="InsertEvents"> \
+            <arg type="a' + SIG_EVENT + '" direction="in" /> \
+            <arg type="au" direction="out" /> \
+        </method> \
+        <method name="DeleteEvents"> \
+            <arg type="au" direction="in" /> \
+            <arg type="(xx)" direction="out" /> \
+        </method> \
+        <method name="DeleteLog" /> \
+        <method name="Quit" /> \
+        <property name="Get" type="ss" access="read" /> \
+        <property name="Set" type="ssv" access="read" /> \
+        <property name="GetAll" type="s" access="read" /> \
+    </interface>';
 
-const Log = DBus.makeProxyClass(LogIface);
-const _log = new Log(DBus.session, LOG_NAME, LOG_PATH);
+const Log = Gio.DBusProxy.makeProxyWrapper(LogIface);
+const _log = new Log(Gio.DBus.session, LOG_NAME, LOG_PATH);
 
 function findEvents(timeRange, eventTemplates, storageState, numEvents, resultType, callback) {
     function handler(results, error) {
         if (error != null)
             global.log("Error querying Zeitgeist for events: "+error);
         else
-            callback(results.map(Event.fromPlain));
+            callback(results[0].map(Event.fromPlain));
     }
     _log.FindEventsRemote(timeRange, eventTemplates.map(Event.toPlain),
                           storageState, numEvents, resultType, handler);
@@ -239,17 +240,16 @@ function deleteEvents(eventIds) {
 
 const INDEX_NAME = 'org.gnome.zeitgeist.Engine';
 const INDEX_PATH = '/org/gnome/zeitgeist/index/activity';
-const IndexIface = {
-    name: 'org.gnome.zeitgeist.Index',
-    methods: [
-        { name: 'Search',
-          inSignature: 's(xx)a'+SIG_EVENT+'uuu',
-          outSignature: 'a'+SIG_EVENT+'u' },
-    ],
-};
+const IndexIface = 
+    '<interface name="org.gnome.zeitgeist.Index"> \
+        <method name="Search"> \
+            <arg type="s(xx)a' + SIG_EVENT + 'uuu" direction="in" /> \
+            <arg type="a' + SIG_EVENT + 'u" direction="out" /> \
+        </method> \
+    </interface>';
 
-const Index = DBus.makeProxyClass(IndexIface);
-const _index = new Index(DBus.session, INDEX_NAME, INDEX_PATH);
+const Index = Gio.DBusProxy.makeProxyWrapper(IndexIface);
+const _index = new Index(Gio.DBus.session, INDEX_NAME, INDEX_PATH);
 
 /**
  * fullTextSearch:
