@@ -53,7 +53,8 @@ function setJumplist (appIconMenu) {
             appIconMenu.addMenuItem(item);
             item.connect('activate', Lang.bind(appIconMenu, function () {
                 let app = Shell.AppSystem.get_default().lookup_app(appIconMenu._source.app.get_id());
-                app.launch(0, [info.uri], null);
+                let timestamp = global.display.get_current_time_roundtrip();
+                app.get_app_info().launch_uris([info.uri], global.create_app_launch_context(timestamp, -1));
                 Main.overview.hide();
             }));
         }

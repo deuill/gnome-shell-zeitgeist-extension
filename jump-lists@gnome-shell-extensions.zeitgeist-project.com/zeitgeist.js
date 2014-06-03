@@ -69,7 +69,7 @@ const StorageState = {
 
 /* Zeitgeist Subjects (files, people, etc.) */
 
-const Subject = function(uri, interpretation, manifestation, origin, mimetype, text, storage) {
+function Subject(uri, interpretation, manifestation, origin, mimetype, text, storage) {
     this._init(uri, interpretation, manifestation, origin, mimetype, text, storage);
 };
 
@@ -162,50 +162,52 @@ Event.toPlain = function(event) {
 const LOG_NAME = 'org.gnome.zeitgeist.Engine';
 const LOG_PATH = '/org/gnome/zeitgeist/log/activity';
 const LogIface = 
-    '<interface name="org.gnome.zeitgeist.Log"> \
-        <method name="GetEvents"> \
-            <arg type="au" direction="in" /> \
-            <arg type="a' + SIG_EVENT + '" direction="out" /> \
-        </method> \
-        <method name="FindRelatedUris"> \
-            <arg type="au" direction="in" /> \
-            <arg type="(xx)" direction="out" /> \
-            <arg type="a(' + SIG_EVENT + ')" direction="out" /> \
-            <arg type="a'+ SIG_EVENT + '" direction="out" /> \
-            <arg type="u" direction="out" /> \
-            <arg type="u" direction="out" /> \
-            <arg type="u" direction="out" /> \
-        </method> \
-        <method name="FindEventIds"> \
-            <arg type="(xx)" direction="in" /> \
-            <arg type="a' + SIG_EVENT + '" direction="in" /> \
-            <arg type="u" direction="in" /> \
-            <arg type="u" direction="in" /> \
-            <arg type="u" direction="in" /> \
-            <arg type="au" direction="out" /> \
-        </method> \
-        <method name="FindEvents"> \
-            <arg type="(xx)" direction="in" /> \
-            <arg type="a' + SIG_EVENT + '" direction="in" /> \
-            <arg type="u" direction="in" /> \
-            <arg type="u" direction="in" /> \
-            <arg type="u" direction="in" /> \
-            <arg type="a' + SIG_EVENT + '" direction="out" /> \
-        </method> \
-        <method name="InsertEvents"> \
-            <arg type="a' + SIG_EVENT + '" direction="in" /> \
-            <arg type="au" direction="out" /> \
-        </method> \
-        <method name="DeleteEvents"> \
-            <arg type="au" direction="in" /> \
-            <arg type="(xx)" direction="out" /> \
-        </method> \
-        <method name="DeleteLog" /> \
-        <method name="Quit" /> \
-        <property name="Get" type="ss" access="read" /> \
-        <property name="Set" type="ssv" access="read" /> \
-        <property name="GetAll" type="s" access="read" /> \
-    </interface>';
+    '<node> \
+        <interface name="org.gnome.zeitgeist.Log"> \
+            <method name="GetEvents"> \
+                <arg type="au" direction="in" /> \
+                <arg type="a' + SIG_EVENT + '" direction="out" /> \
+            </method> \
+            <method name="FindRelatedUris"> \
+                <arg type="au" direction="in" /> \
+                <arg type="(xx)" direction="out" /> \
+                <arg type="a(' + SIG_EVENT + ')" direction="out" /> \
+                <arg type="a'+ SIG_EVENT + '" direction="out" /> \
+                <arg type="u" direction="out" /> \
+                <arg type="u" direction="out" /> \
+                <arg type="u" direction="out" /> \
+            </method> \
+            <method name="FindEventIds"> \
+                <arg type="(xx)" direction="in" /> \
+                <arg type="a' + SIG_EVENT + '" direction="in" /> \
+                <arg type="u" direction="in" /> \
+                <arg type="u" direction="in" /> \
+                <arg type="u" direction="in" /> \
+                <arg type="au" direction="out" /> \
+            </method> \
+            <method name="FindEvents"> \
+                <arg type="(xx)" direction="in" /> \
+                <arg type="a' + SIG_EVENT + '" direction="in" /> \
+                <arg type="u" direction="in" /> \
+                <arg type="u" direction="in" /> \
+                <arg type="u" direction="in" /> \
+                <arg type="a' + SIG_EVENT + '" direction="out" /> \
+            </method> \
+            <method name="InsertEvents"> \
+                <arg type="a' + SIG_EVENT + '" direction="in" /> \
+                <arg type="au" direction="out" /> \
+            </method> \
+            <method name="DeleteEvents"> \
+                <arg type="au" direction="in" /> \
+                <arg type="(xx)" direction="out" /> \
+            </method> \
+            <method name="DeleteLog" /> \
+            <method name="Quit" /> \
+            <property name="Get" type="ss" access="read" /> \
+            <property name="Set" type="ssv" access="read" /> \
+            <property name="GetAll" type="s" access="read" /> \
+        </interface> \
+    </node>';
 
 const Log = Gio.DBusProxy.makeProxyWrapper(LogIface);
 const _log = new Log(Gio.DBus.session, LOG_NAME, LOG_PATH);
@@ -241,12 +243,14 @@ function deleteEvents(eventIds) {
 const INDEX_NAME = 'org.gnome.zeitgeist.Engine';
 const INDEX_PATH = '/org/gnome/zeitgeist/index/activity';
 const IndexIface = 
-    '<interface name="org.gnome.zeitgeist.Index"> \
-        <method name="Search"> \
-            <arg type="s(xx)a' + SIG_EVENT + 'uuu" direction="in" /> \
-            <arg type="a' + SIG_EVENT + 'u" direction="out" /> \
-        </method> \
-    </interface>';
+    '<node> \
+        <interface name="org.gnome.zeitgeist.Index"> \
+            <method name="Search"> \
+                <arg type="s(xx)a' + SIG_EVENT + 'uuu" direction="in" /> \
+                <arg type="a' + SIG_EVENT + 'u" direction="out" /> \
+            </method> \
+        </interface> \
+    </node>';
 
 const Index = Gio.DBusProxy.makeProxyWrapper(IndexIface);
 const _index = new Index(Gio.DBus.session, INDEX_NAME, INDEX_PATH);
